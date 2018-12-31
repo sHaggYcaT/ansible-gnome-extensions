@@ -23,12 +23,9 @@
   changed_when: no
 
 - block:
-  become: yes
-  become_user: "{{ misc_user }}"
-
     - name: Check for Gnome Shell extensions already installed
       stat:
-        path: ~/.local/share/gnome-shell/extensions/{{ item.json.uuid }}
+        path: /home/{{ misc_user }}/.local/share/gnome-shell/extensions/{{ item.json.uuid }}
       register: st_existing_extensions
       with_items: "{{ gnome_shell_extension_info.results }}"
 
@@ -42,10 +39,10 @@
 
     - name: Create install directories
       file:
-        path: ~/.local/share/gnome-shell/extensions/{{ item.item.item.json.uuid }}
+        path: /home/{{ misc_user }}/.local/share/gnome-shell/extensions/{{ item.item.item.json.uuid }}
         state: directory
-        owner: "{{ ansible_user_uid }}"
-        group: "{{ ansible_user_gid }}"
+        owner: "{{ misc_user }}"
+        group: "{{ misc_user }}"
         mode: 0775
       with_items: "{{ download_gnome_shell_extensions.results }}"
       when: not item|skipped
@@ -53,18 +50,27 @@
     - name: Install Gnome Shell extensions
       unarchive:
         src: "{{ item.dest }}"
-        dest: ~/.local/share/gnome-shell/extensions/{{ item.item.item.json.uuid }}
+        dest: /home/{{ misc_user }}/.local/share/gnome-shell/extensions/{{ item.item.item.json.uuid }}
       with_items: "{{ download_gnome_shell_extensions.results }}"
       when: not item|skipped
+      become: yes
+      become_user: "{{ misc_user }}"
 
     - name: Enable Gnome Shell extensions
       command: gnome-shell-extension-tool --enable-extension {{ item.item.item.json.uuid }}
       register: enable_gnome_shell_extensions
       with_items: "{{ download_gnome_shell_extensions.results }}"
       when: not item|skipped
+      become: yes
+      become_user: "{{ misc_user }}"
+
+
   always:
     - name: Delete temporary download directory
       file:
         path: "{{ gnome_extension_download_dir.path }}"
         state: absent
       changed_when: no
+  #become: yes
+  #become_user: "{{ misc_user }}"
+
