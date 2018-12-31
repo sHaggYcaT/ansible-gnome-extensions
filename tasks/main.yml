@@ -23,6 +23,9 @@
   changed_when: no
 
 - block:
+  become: yes
+  become_user: "{{ misc_user }}"
+
     - name: Check for Gnome Shell extensions already installed
       stat:
         path: ~/.local/share/gnome-shell/extensions/{{ item.json.uuid }}
